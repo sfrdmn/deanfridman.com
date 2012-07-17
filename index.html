@@ -2,86 +2,33 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title></title>
-    <style type="text/css" rel="stylesheet">
-      * {
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        overflow: hidden;
-      }
-    </style>
-    <script type="text/javascript" src="javascript/paper.js"></script>
+    <title>deanfridman.com</title>
+    <link type="text/css" rel="stylesheet" href="static/css/space.css">
+
+    <script type="text/javascript" src="static/external/js/modernizr.space.js"></script>
+    <script type="text/javascript" src="static/external/js/jquery.js"></script>
+    <script type="text/javascript" src="http://w.soundcloud.com/player/api.js"></script>
+    <script type="text/javascript" src="static/external/js/paper.js"></script>
+    <script type="text/paperscript" src="static/js/space.js"
+        canvas="space-canvas"></script>
   </head>
   <body>
-    <canvas id="canvas">
+    <canvas id="space-canvas" resize="true">
     </canvas>
+    <div class="container">
+      <aside>
+        <header class="logo">Dean Fridman</header>
+        <section class="description">
+          <p>Hi. My name is Dean.</p>
+          <p>I live on a hill.</p>
+          <p>I make music.</p>
+        </section>
+        <ul class="tracks">
+        </ul>
+        <iframe width="100%" height="1" scrolling="no" frameborder="no" src="http://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F48320799&show_artwork=true"></iframe>
+      </aside>
+    </div>
+    <footer>
+    </footer>
   </body>
-  <script type="text/javascript">
-    var canvas = document.getElementById('canvas');
-    var ctx = canvas.getContext('2d');
-    var width = window.innerWidth;
-    var height = window.innerHeight + 10;
-    var scale = 1.05;
-    var identityTransform = [1, 0, 0, 1, 0, 0];
-    var leftPanTransform = [1, 0, 0, 1, -width/2, -height/2];
-    var rightPanTransform = [1, 0, 0, 1, width/2, height/2];
-    var scaleTransform = [scale, 0, 0, scale, 0, 0];
-    var translateOriginX = width/2;
-    var translateOriginY = height/2;
-    var animationInterval = 100;
-    var spsAverage = 5;
-    var spsDeviation = 4;
-    var starRadius = 0.5;
-    var stars = [];
-
-    canvas.setAttribute('width', width);
-    canvas.setAttribute('height', height);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, width, height);
-    ctx.setTransform(identityTransform);
-    ctx.save();
-
-    setInterval(travel, animationInterval);
-    setTimeout(addStar, 0);
-
-    function travel() {
-      ctx.translate(-translateOriginX, -translateOriginY);
-      ctx.scale(scale, scale);
-      ctx.translate(translateOriginX, translateOriginY);
-      /*ctx.transform(leftPanTransform);
-      ctx.transform(scaleTransform);
-      ctx.transform(rightPanTransform);*/
-     // var state = ctx.save();
-      //ctx.restore(state);
-    }
-
-    function addStar() {
-      ctx.fillStyle = '#FFFFFF';
-      ctx.beginPath();
-      stars.push({
-        'x': randomIntBetween(0, width),
-        'y': randomIntBetween(0, height),
-        'r': starRadius,
-        'start': 0,
-        'end': 2 * Math.PI
-      });
-
-      ctx.arc(randomIntBetween(0, width),
-          randomIntBetween(0, height),
-          starRadius, 0, 2 * Math.PI, true);
-      ctx.closePath();
-      ctx.fill();
-      var deviation = Math.random() * spsDeviation * (Math.random() < 0.5 ? 1 : -1);
-      deviation = spsAverage + deviation <= 0 ? .1 : deviation;
-
-      timeoutInterval = 1000 / (spsAverage + deviation);
-      setTimeout(addStar, timeoutInterval);
-    }
-
-    function randomIntBetween(min, max) {
-      return Math.floor(Math.random() * (max - min + 1) + min);
-    }
-  </script>
 </html>

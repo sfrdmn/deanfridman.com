@@ -1,0 +1,103 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+body {
+  overflow: hidden;
+  font-size: 16px;
+  background-color: rgb(25, 25, 25);
+  font-family: Helvetica, Arial, sans-serif;
+}
+a {
+  text-decoration: none;
+  color: blue;
+}
+a:visited {
+  text-decoration: none;
+  color: auto;
+}
+a:hover {
+  text-decoration: underline;
+}
+canvas {
+  position: relative;
+  top: 0;
+  z-index: 0;
+}
+.container {
+  position: absolute;
+  top: 0;
+  display: block;
+  z-index: 1;
+}
+aside {
+  position: relative;
+  color: rgb(30, 30, 30);
+  pointer-events: none;
+  border-radius: 2px;
+  background-color: rgba(255, 135, 0, 0);
+  padding: 3em;
+}
+aside .description {
+  width: 12em;
+  color: white;
+  padding: 1em;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+aside .logo {
+  display: none;
+  font-size: 3em;
+  color: transparent;
+  text-shadow: -1px -1px 0 rgb(255, 127, 0),
+      -2px -2px 0 rgb(255, 127, 0),
+      -3px -3px 0 rgb(255, 127, 0),
+      -4px -4px 0 rgb(255, 127, 0),
+      -5px -5px 0 rgb(255, 127, 0),
+      -6px -6px 0 rgba(255, 255, 255, 0.25),
+      1px 1px 0 rgba(0, 0, 0, 0.25);
+}
+iframe {
+  pointer-events: auto;
+  height: 1px;
+  width: 1px;
+  position: absolute;
+  top: -100px;
+  left: -100px;
+}
+.tracks li {
+  list-style: none;
+  margin: 1em 0;
+}
+.tracks a {
+  pointer-events: auto;
+  font-size: 2.3em;
+  color: rgb(255, 0, 255);
+  text-transform: capitalize;
+}
+.tracks a:hover {
+  text-decoration: none;
+}
+.tracks a:hover:before {
+  /*font-size: 80%;
+  position: absolute;
+  left: 0;
+  margin-top: 0.3em;
+  content: "▶";*/
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.5em solid transparent;
+  border-bottom: 0.5em solid transparent;
+  border-left: 0.5em solid rgb(255, 0, 255);
+  content: " ";
+}
+
+.tracks a.active:hover:before {
+  border: none;
+  height: 1em;
+  width: 1em;
+  background-color: rgb(255, 0, 255);
+  content: " ";
+}
