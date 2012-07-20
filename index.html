@@ -5,9 +5,11 @@
     <title>deanfridman.com</title>
     <link type="text/css" rel="stylesheet" href="static/css/space.css">
     <script type="text/javascript" src="static/external/js/modernizr.space.js"></script>
+    <script type="text/javascript" src="static/external/js/underscore.js"></script>
     <script type="text/javascript" src="static/external/js/jquery.js"></script>
     <script type="text/javascript" src="http://w.soundcloud.com/player/api.js"></script>
     <script type="text/javascript" src="static/external/js/paper.js"></script>
+
     <script type="text/paperscript" src="static/js/space.js"
         canvas="space-canvas"></script>
   </head>
@@ -21,20 +23,26 @@
             <p>Hi. My name is Dean.</p>
             <p>I live on a hill.</p>
             <p>I make music.</p>
-          </section>
-          <section class="contact">
-            <ul>
-              <li>
-                <a href="www.soundcloud.com/degobah">
-                  <img src="/static/img/soundcloud.png">
-                </a>
-              </li>
-              <li>
-                <a href="www.soundcloud.com/degobah">
-                  <img src="/static/img/soundcloud.png">
-                </a>
-              </li>
-            </ul>
+
+            <!-- nasty shits for display table stuff -->
+            <section class="contact">
+              <div>
+                <div>
+                  <ul>
+                    <li>
+                      <a href="http://soundcloud.com/degobah">
+                        <img src="/static/img/soundcloud.png">
+                      </a>
+                    </li>
+                    <li id="email-btn" class="btn">
+                      <div>
+                        <div>@</div>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </section>
           </section>
         </div>
         <ul class="tracks">

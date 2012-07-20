@@ -2,107 +2,134 @@
  * 4 dean :)
  * @author Sean Fridman
  */
-var fadeInDuration = 500; // Initial fade in.
+var fadeInDuration = 500; // Content fade in duration.
 
-$(document).ready(function() {
-  var world = createStarWorld();
-  initTracks(world);
-});
-
-function createStarWorld() {
-  var numStars = 1; // Initial number of stars
+var createStarWorld = function() {
+  var initialStars = 1;
   var spawnRate = 50; // Milliseconds between star spawns
-  var stars = []; // All the stars :O
+  var starGroup = null;
   var size = view.viewSize;
   var center = view.center;
   var mousePos = center.clone();
-  var spawnRadius = 100;
+  var spawnRadius = 200;
   var parallaxFactor = .035;
-  var scaleFactor = 1.05;
-  var scaleMatrix = getScaleMatrix();
+  var scaleFactor = 1.02;
   var fadeDecrement = .05;
-  var fps = 24; // Animation frames per second.
+  var fps = 50; // Animation frames per second.
   var spf = 1 / fps; // Seconds per frame.
-  var starBounds = {};
   var lastSpawn = null; // Time deltas to throttle onFrame
   var lastDraw = null;
   var isRunning = false;
 
-  starBounds.left = 0 - center.x;
-  starBounds.right = size.width + center.x;
-  starBounds.top = 0 - center.y;
-  starBounds.bottom = size.height + center.y;
 
   onMouseMove = function(e) {
     var e = e.event;
     mousePos = new Point(e.x, e.y);
-  }
-
-  function spawnStar() {
-      stars.push(new Star());
-  }
+  };
 
   onFrame = function(e) {
-    if (isRunning && (!lastSpawn || e.time - lastSpawn > spawnRate / 1000)) {
-      stars.push(new Star());
-      lastSpawn = e.time;
-    }
-
-    if (!lastDraw || e.time - lastDraw > spf) {
-      for (var i = 0; i < stars.length; i++) {
-        (function(i) {
-          var star = stars[i];
-          star.update();
-
-          if (star.isOutOfBounds()) {
-            stars[i].remove();
-            stars.splice(i, 1);
-          } else if (star.isInYourFace()) {
-            star.fadeOut(function() {
-              stars[i].remove();
-              stars.splice(i, 1);
-            });
-          }
-        })(i)
+    if (isRunning) {
+      if (!lastSpawn || e.time - lastSpawn > spawnRate / 1000) {
+        starGroup.spawnStar();
+        lastSpawn = e.time;
       }
-      lastDraw = e.time;
+      if (!lastDraw || e.time - lastDraw > spf) {
+        starGroup.update();
+      }
     }
   };
 
   onResize = function(e) {
     size = view.viewSize;
     center = new Point(view.center);
-    scaleMatrix = getScaleMatrix();
-    starBounds.left = 0 - (center.x * parallaxFactor);
-    starBounds.right = size.width + (center.x * parallaxFactor);
-    starBounds.top = 0 - (center.y * parallaxFactor);
-    starBounds.bottom = size.height + (center.y * parallaxFactor);
+    Star.updateBounds();
   };
 
+  var StarGroup = (function() {
+    return Base.extend({
+      initialize: function() {
+        this.stars = [];
+        this.group = new Group();
+      },
+      fadeOut: function(callback) {
+        this.isFading = true;
+        $(this).on('fadeout', _.bind(function() {
+          this.reset();
+          callback();
+        }, this));
+      },
+      fadeStep: function() {
+        this.group.opacity -= fadeDecrement;
+        if (this.group.opacity <= 0) {
+          this.group.opacity = 0;
+          $(this).trigger('fadeout');
+        }
+      },
+      reset: function() {
+        this.group.opacity = 1;
+        this.isFading = false;
+        this.stars = [];
+        this.group.removeChildren();
+      },
+      spawnStar: function() {
+        var star = new Star();
+        this.stars.push(star);
+        this.group.addChild(star.symbol);
+      },
+      removeStar: function(star) {
+        star.remove();
+        this.stars = _.reject(this.stars, function(_star) {
+          return star.id === _star.id;
+        });
+      },
+      fadeStar: function(star) {
+        var removeStar = _.bind(this.removeStar, this);
+        star.fadeOut(function() {
+          removeStar(star);
+        });
+      },
+      checkBounds: function(star) {
+        if (star.isOutOfBounds()) {
+          this.removeStar(star);
+        } else if (star.isInYourFace()) {
+          this.fadeStar(star);
+        }
+      },
+      update: function() {
+        this.group.scale(scaleFactor, center);
+        if (this.isFading) {
+          this.fadeStep();
+        }
+        _.each(this.stars, function(star) {
+          star.update();
+          this.checkBounds(star);
+        }, this);
+        console.log(this.group.children.length, this.stars.length);
+      }
+    });
+  })();
+
   var Star = (function() {
-    // Star art
     var starPath = new Path.Circle(new Point(0, 0),
         Math.sqrt(1 / Math.PI));
     starPath.fillColor = 'white';
     var starSymbol = new Symbol(starPath);
 
-    var randStartPos = (function() {
-      // Radius in center of canvas where points can spawn.
-      // Refers to a square radius.
+    var starBounds = new Rectangle(0 - center.x, 0 - center.y,
+        size.width + center.x, size.height + center.y);
+
+    var getRandomStartPos = function() {
       var pointMin = new Point(center.x - spawnRadius,
           center.y - spawnRadius);
       var pointMax = new Point(center.x + spawnRadius,
           center.y + spawnRadius);
       var pointRange = pointMax - pointMin;
-
-      return function() {
-        var pos = Point.random() * pointRange + pointMin;
-        if (pos == center) {
-          pos = getRandomPos();
-        }
-        return pos;
-      };
-    })();
+      var pos = Point.random() * pointRange + pointMin;
+      if (pos == center) {
+        pos = getRandomStartPos();
+      }
+      return pos;
+    };
 
     var getMouseDeltaPan = function() {
       var dx = (center.x - mousePos.x) * parallaxFactor,
@@ -110,40 +137,31 @@ function createStarWorld() {
       return new Matrix(1, 0, 0, 1, dx, dy);
     }
 
-    return Base.extend({
+    var Star = Base.extend({
       initialize: function() {
-        var star = new Path.Circle(new Point(0, 0), .5);
-        star.fillColor = new RgbColor(Math.random(), Math.random(), Math.random());
-        star.fillColor = 'rgb(245, 245, 245)';
-        var starSymbola = new Symbol(star);
-        this.symbol = new PlacedSymbol(starSymbola);
-        this.symbol.position = randStartPos();
-        this.matrix = this.symbol.matrix.clone();
+        this.symbol = new PlacedSymbol(starSymbol);
+        this.symbol.position = getRandomStartPos();
+        this.id = this.symbol.id;
       },
       update: function() {
-        // Resolve position
-        this.matrix.preConcatenate(scaleMatrix);
-        this.scale = this.matrix.scaleX;
-        var transMatrix = this.matrix.clone(),
-          panMatrix = getMouseDeltaPan();
-        transMatrix.concatenate(panMatrix);
-        this.symbol.matrix = transMatrix;
-
-        // Resolve fading
         if (this.isFading) {
-          var opacity = this.symbol.opacity - fadeDecrement;
-          this.symbol.opacity = opacity > 0 ? opacity : 0;
-          if (opacity === 0) {
-            $(this).trigger('fadeout:done');
-          }
+          this.fadeStep();
         }
       },
       remove: function() {
-        this.symbol.remove();
+        return this.symbol.remove();
       },
       fadeOut: function(callback) {
+        console.log('fade out star!');
         this.isFading = true;
-        $(this).on('fadeout:done', callback);
+        $(this).on('fadeout', callback);
+      },
+      fadeStep: function() {
+        this.symbol.opacity -= fadeDecrement;
+        if (this.symbol.opacity <= 0) {
+          this.symbol.opacity = 0;
+          $(this).trigger('fadeout');
+        }
       },
       isOutOfBounds: function() {
         var bounds = this.symbol.bounds;
@@ -158,39 +176,38 @@ function createStarWorld() {
             (bounds.top < 0 && bounds.bottom > size.height);
       }
     });
+
+    Star.updateBounds = function() {
+      starBounds = new Rectangle(0 - center.x, 0 - center.y,
+        size.width + center.x, size.height + center.y);
+    };
+
+    return Star;
   })();
 
-  function getScaleMatrix() {
-    var leftPanTransform = new Matrix(1, 0, 0, 1, -center.x, -center.y),
-      rightPanTransform = new Matrix(1, 0, 0, 1, center.x, center.y),
-      scaleTransform = new Matrix(scaleFactor, 0, 0, scaleFactor, 0, 0);
-    return rightPanTransform
-        .concatenate(scaleTransform)
-        .concatenate(leftPanTransform);
-  }
-
-  // API
+  // Initialize + return API
+  starGroup = new StarGroup();
   return {
     run: function() {
-      isRunning = true;
-      for (var i = 0; i < numStars; i++) {
-        stars.push(new Star());
+      if (!isRunning) {
+        console.log('run!');
+        isRunning = true;
+        for (var i = 0; i < initialStars; i++) {
+          starGroup.spawnStar();
+        }
       }
     },
     stop: function() {
-      isRunning = false;
-      var length = stars.length;
-      for (var i = 0; i < length; i++) {
-        (function(i) {
-          var star = stars[i];
-          star.fadeOut(function() {
-            delete stars[i];
-          });
-        })(i);
+      if (isRunning) {
+        console.log('stop!');
+        starGroup.fadeOut(function() {
+          isRunning = false;
+          console.log('fadeout callback', isRunning);
+        });
       }
     }
-  };
-}
+  }
+};
 
 function initTracks(world) {
   var clientId = 'a2fa3d6c0a1b528e51fa12143f86444f';
@@ -225,7 +242,6 @@ function initTracks(world) {
           $link.html(track.title);
           $li.append($link);
           $trackEl.append($li);
-          console.log(track.id);
         }
       });
 
@@ -252,7 +268,6 @@ function initTracks(world) {
       if (isActive) {
         $currentTarget.removeClass('active loading');
         widget.pause();
-        world.stop();
       } else {
         $currentTrackLink = $currentTarget;
         $currentTarget.addClass('active loading');
@@ -288,8 +303,12 @@ function initTracks(world) {
     }
 
     widget.bind(SC.Widget.Events.FINISH, function(e) {
-      $currentTrackLink.removeClass('active');
       world.stop();
+      $currentTrackLink.removeClass('active');
+      var $nextTrackLi = $currentTrackLink.parent().next();
+      if ($nextTrackLi.length) {
+        $nextTrackLi.children('a').trigger('click');
+      }
     });
   });
 
@@ -328,7 +347,6 @@ function centerContent() {
   var elHeight = $el.outerHeight();
   var windowHeight = $(document).height();
   var pos = $el.offset();
-  console.log(pos, elHeight, windowHeight);
   var xOffset = pos.x;
   var yOffset = windowHeight / 2 - elHeight / 2;
 
@@ -337,3 +355,15 @@ function centerContent() {
     'margin-top': yOffset + 'px'
   });
 }
+
+/* RUN CODE */
+$(document).ready(function() {
+  try {
+    var world = createStarWorld();
+    console.log(world)
+    initTracks(world);
+  } catch (e) {
+    console.log(e.message, e.trace);
+  }
+});
+
