@@ -2,13 +2,10 @@
  * 4 dean :)
  * @author Sean Fridman
  */
+var fadeInDuration = 500; // Initial fade in.
 
 $(document).ready(function() {
   var world = createStarWorld();
-  /*world.run();
-  setTimeout(function() {
-    world.stop();
-  }, 5000);*/
   initTracks(world);
 });
 
@@ -206,6 +203,8 @@ function initTracks(world) {
   var $trackEl = $('.tracks');
   var widget = SC.Widget($('iframe')[0]);
   var currentTrackId = null;
+  var $currentTrackLink = null;
+  var preloaderSelector = '.tracks a.active:before';
 
   $.ajaxSetup({
     dataType: 'jsonp'
@@ -213,12 +212,13 @@ function initTracks(world) {
 
   widget.bind(SC.Widget.Events.READY, function() {
 
+
     fetchTracks(function(trackData) {
       $.each(trackData, function(i, track) {
         // Don't include certain tracks cuz THEY SUCK
         if ($.inArray(track.id, trackExceptions) === -1) {
           var $li = $('<li></li>');
-          var $link = $('<a class="inactive" href=""></a>');
+          var $link = $('<a href=""></a>');
           $link.attr({
             id: track.id
           });
@@ -232,48 +232,63 @@ function initTracks(world) {
       $('.tracks li a').on('click', function(e) {
         e.preventDefault();
       });
-      $('.tracks li a').on('click', onClickInactiveTrack);
+      $('.tracks li a').on('click', onClickTrack);
+      // Show stuff after loaded
+      $('aside').css('visibility', 'visible')
+          .animate({opacity: 1}, fadeInDuration);
     });
 
-    function onClickInactiveTrack(e) {
+
+    function onClickTrack(e) {
       var $currentTarget = $(e.currentTarget);
+      var isActive = $currentTarget.hasClass('active');
       var id = e.currentTarget.id;
-      $currentTarget.off('click', onClickInactiveTrack);
 
       world.stop();
-      $currentTarget.addClass('active');
-      if (currentTrackId === id) {
-        widget.play();
-        world.run();
+      $('.tracks a').each(function(i, link) {
+        $(link).removeClass('active');
+      });
+
+      if (isActive) {
+        $currentTarget.removeClass('active loading');
+        widget.pause();
+        world.stop();
       } else {
-        currentTrackId = id;
-        loadTrackInPlayer(id, function() {
-          widget.play();
-          widget.bind(SC.Widget.Events.LOAD_PROGRESS, function(e) {
-            widget.unbind(SC.Widget.Events.LOAD_PROGRESS);
-            world.run();
+        $currentTrackLink = $currentTarget;
+        $currentTarget.addClass('active loading');
+        if (currentTrackId == id) {
+          playActiveTrack();
+        } else {
+          currentTrackId = id;
+          loadTrackInPlayer(id, function() {
+            playActiveTrack();
           });
-        });
+        }
       }
 
-      $currentTarget.on('click', onClickActiveTrack);
+      function playActiveTrack() {
+        $currentTarget.addClass('loading');
+        // Don't play if we paused while loading.
+        if ($currentTarget.hasClass('active')) {
+          // Play actually starts the loading...
+          widget.play();
+          widget.bind(SC.Widget.Events.PLAY_PROGRESS, function(e) {
+            // First LOAD_PROGRESS trigger signifies start of song
+            widget.unbind(SC.Widget.Events.PLAY_PROGRESS);
+            world.run();
+            $currentTarget.removeClass('loading');
+          });
+        } else {
+          $currentTarget.removeClass('loading');
+        }
+      }
     }
 
     function onClickActiveTrack(e) {
-      var $currentTarget = $(e.currentTarget);
-      $currentTarget.removeClass('active');
-      $currentTarget.off('click', onClickActiveTrack);
-
-      widget.pause();
-      world.stop();
-
-      $currentTarget.on('click', onClickInactiveTrack);
     }
 
-    widget.bind(SC.Widget.Events.PLAY, function() {
-    });
-
-    widget.bind(SC.Widget.Events.PAUSE, function() {
+    widget.bind(SC.Widget.Events.FINISH, function(e) {
+      $currentTrackLink.removeClass('active');
       world.stop();
     });
   });
@@ -305,4 +320,20 @@ function initTracks(world) {
     }
     return request;
   }
+}
+
+function centerContent() {
+  var minY = 16;
+  var $el = $('aside');
+  var elHeight = $el.outerHeight();
+  var windowHeight = $(document).height();
+  var pos = $el.offset();
+  console.log(pos, elHeight, windowHeight);
+  var xOffset = pos.x;
+  var yOffset = windowHeight / 2 - elHeight / 2;
+
+  yOffset = yOffset > minY ? yOffset : minY;
+  $el.css({
+    'margin-top': yOffset + 'px'
+  });
 }
