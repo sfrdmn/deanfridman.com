@@ -55,6 +55,11 @@ canvas {
   z-index: 0;
 }
 .container {
+  -webkit-box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1),
+    inset 0 2px 0 0 rgba(0, 255, 255, 1),
+    inset 0 3px 0 0 rgba(255, 0, 255, 1),
+    inset 0 4px 0 0 rgba(255, 255, 0, 1),
+    inset 0 5px 0 0 rgba(0, 0, 0, 1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1),
     inset 0 2px 0 rgba(0, 255, 255, 1),
     inset 0 3px 0 rgba(255, 0, 255, 1),
@@ -70,6 +75,7 @@ canvas {
 .container > * {
   visibility: hidden;
   opacity: 0;
+  filter: alpha(opacity=0);
 }
 aside {
   position: relative;
@@ -78,7 +84,9 @@ aside {
 .info {
   text-align: left;
   display: inline-block;
+  -webkit-box-shadow: -1px -1px 0 0 rgba(255, 255, 255, 0.25),
   box-shadow: -1px -1px 0 rgba(255, 255, 255, 0.25),
+    1px 1px 0 rgba(0, 0, 0, 0.25);
     1px 1px 0 rgba(0, 0, 0, 0.25);
   color: white;
   font-weight: bold;
@@ -91,6 +99,8 @@ aside {
 }
 .description {
   float: left;
+  -webkit-box-shadow: 1px 0px 0 0 rgba(0, 0, 0, 0.45),
+    2px 0px 0 rgba(255, 255, 255, 0.1);
   box-shadow: 1px 0px 0 rgba(0, 0, 0, 0.45),
     2px 0px 0 rgba(255, 255, 255, 0.1);
   padding-right: 1em;
@@ -105,19 +115,11 @@ aside {
   line-height: 100%;
   display: inline;
   margin-right: 0.8em;}
-.description p:last-child {
-  margin-right: 0;
-}
-.description p:first-child:before {
-  content: none;
-}
 .contact {
   float: right;
 }
 .contact a {
   color: rgba(255, 255, 255, 0.5);
-}
-.contact ul {
 }
 .contact ul li {
   width: 24px;
@@ -129,6 +131,7 @@ aside {
   margin-right: 0;
 }
 #email-btn {
+  -webkit-border-radius: 3px;
   border-radius: 3px;
   font-size: 15px;
   text-align: center;
@@ -144,6 +147,7 @@ aside {
   -moz-user-select: none;
   -webkit-user-select: none;
 
+  background-color: rgb(45, 45, 45);
   background-image: linear-gradient(bottom, rgb(33,33,33) 33%, rgb(71,71,71) 67%);
   background-image: -o-linear-gradient(bottom, rgb(33,33,33) 33%, rgb(71,71,71) 67%);
   background-image: -moz-linear-gradient(bottom, rgb(33,33,33) 33%, rgb(71,71,71) 67%);
@@ -246,11 +250,14 @@ display: none;
   font-family: "Courier New";
   visibility: visible;
   opacity: 1;
+  filter: alpha(opacity=1);
   padding: 1em;
   font-size: 1.5em;
   background-color: rgb(169, 0, 32);
   border: 1px solid rgb(130, 0, 24);
+  -webkit-border-radius: 4px;
   border-radius: 4px;
+  -webkit-box-shadow: 1px 1px 1px 0 rgba(0, 0, 0, 0.25);
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.25);
   color: rgb(235, 235, 235);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.25);
