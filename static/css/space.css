@@ -103,7 +103,7 @@ aside {
     2px 0px 0 rgba(255, 255, 255, 0.1);
   box-shadow: 1px 0px 0 rgba(0, 0, 0, 0.45),
     2px 0px 0 rgba(255, 255, 255, 0.1);
-  padding-right: 1em;
+  padding-right: 0.4em;
   margin-right: 1em;
   min-height: 24px;
 }
