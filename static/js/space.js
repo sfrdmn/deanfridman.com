@@ -252,16 +252,14 @@ function initTracks(world) {
       });
 
       $.each(trackData, function(i, track) {
-        if (!_.intersection(track.id, trackExceptions).length) {
-          var $li = $('<li></li>');
-          var $link = $('<a href=""></a>');
-          $link.attr({
-            id: track.id
-          });
-          $link.html(track.title);
-          $li.append($link);
-          $trackEl.append($li);
-        }
+        var $li = $('<li></li>');
+        var $link = $('<a href=""></a>');
+        $link.attr({
+          id: track.id
+        });
+        $link.html(track.title);
+        $li.append($link);
+        $trackEl.append($li);
       });
 
       // After al tracks placed...
