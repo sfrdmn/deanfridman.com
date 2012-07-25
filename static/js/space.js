@@ -15,10 +15,13 @@ var createStarWorld = function() {
   var parallaxFactor = .035;
   var scaleFactor = 1.02;
   var fadeDecrement = .05;
+  var fadeFps = 50; // Throttle fade out
+  var fadeSpf = 1 / fadeFps;
   var fps = 50; // Animation frames per second.
   var spf = 1 / fps; // Seconds per frame.
-  var lastSpawn = null; // Time deltas to throttle onFrame
-  var lastDraw = null;
+  var lastSpawn = 0; // Time deltas to throttle onFrame
+  var lastDraw = 0;
+  var lastFade = 0;
   var isRunning = false;
 
 
@@ -29,12 +32,12 @@ var createStarWorld = function() {
 
   onFrame = function(e) {
     if (isRunning) {
-      if (!lastSpawn || e.time - lastSpawn > spawnRate / 1000) {
+      if (e.time - lastSpawn >= spawnRate / 1000) {
         starGroup.spawnStar();
         lastSpawn = e.time;
       }
-      if (!lastDraw || e.time - lastDraw > spf) {
-        starGroup.update();
+      if (e.time - lastDraw >= spf) {
+        starGroup.update(e);
       }
     }
   };
@@ -43,6 +46,7 @@ var createStarWorld = function() {
     size = view.viewSize;
     center = new Point(view.center);
     Star.updateBounds();
+    positionTracksEl();
   };
 
   var StarGroup = (function() {
@@ -95,16 +99,16 @@ var createStarWorld = function() {
           this.fadeStar(star);
         }
       },
-      update: function() {
+      update: function(e) {
         this.group.scale(scaleFactor, center);
-        if (this.isFading) {
+        if (this.isFading && e.time - lastFade >= fadeSpf) {
+          lastFade = e.time;
           this.fadeStep();
         }
         _.each(this.stars, function(star) {
           star.update();
           this.checkBounds(star);
         }, this);
-        console.log(this.group.children.length, this.stars.length);
       }
     });
   })();
@@ -143,8 +147,9 @@ var createStarWorld = function() {
         this.symbol.position = getRandomStartPos();
         this.id = this.symbol.id;
       },
-      update: function() {
-        if (this.isFading) {
+      update: function(e) {
+        if (this.isFading && e.time - lastFade >= fadeSpf) {
+          lastFade = e.time;
           this.fadeStep();
         }
       },
@@ -152,7 +157,6 @@ var createStarWorld = function() {
         return this.symbol.remove();
       },
       fadeOut: function(callback) {
-        console.log('fade out star!');
         this.isFading = true;
         $(this).on('fadeout', callback);
       },
@@ -187,26 +191,35 @@ var createStarWorld = function() {
 
   // Initialize + return API
   starGroup = new StarGroup();
-  return {
+  var api = {
     run: function() {
       if (!isRunning) {
-        console.log('run!');
         isRunning = true;
         for (var i = 0; i < initialStars; i++) {
           starGroup.spawnStar();
         }
+        $(this).trigger('run');
       }
     },
     stop: function() {
       if (isRunning) {
-        console.log('stop!');
-        starGroup.fadeOut(function() {
+        var onFadeOut = _.bind(function() {
           isRunning = false;
-          console.log('fadeout callback', isRunning);
-        });
+          $(this).trigger('stop');
+        }, this);
+
+        starGroup.fadeOut(onFadeOut);
       }
+    },
+    isRunning: function() {
+      return isRunning;
+    },
+    isStopped: function() {
+      return !isRunning;
     }
   }
+
+  return api;
 };
 
 function initTracks(world) {
@@ -231,9 +244,15 @@ function initTracks(world) {
 
 
     fetchTracks(function(trackData) {
+      // Don't include certain tracks cuz THEY SUCK
+      trackData = _.filter(trackData, function(track) {
+        return !_.any(trackExceptions, function(exceptionId) {
+          return track.id === exceptionId;
+        });
+      });
+
       $.each(trackData, function(i, track) {
-        // Don't include certain tracks cuz THEY SUCK
-        if ($.inArray(track.id, trackExceptions) === -1) {
+        if (!_.intersection(track.id, trackExceptions).length) {
           var $li = $('<li></li>');
           var $link = $('<a href=""></a>');
           $link.attr({
@@ -245,12 +264,13 @@ function initTracks(world) {
         }
       });
 
+      // After al tracks placed...
       $('.tracks li a').on('click', function(e) {
         e.preventDefault();
       });
       $('.tracks li a').on('click', onClickTrack);
-      // Show stuff after loaded
-      $('aside').css('visibility', 'visible')
+      onResize(); // Force resize positioning
+      $('.container > *').css('visibility', 'visible')
           .animate({opacity: 1}, fadeInDuration);
     });
 
@@ -261,55 +281,72 @@ function initTracks(world) {
       var id = e.currentTarget.id;
 
       world.stop();
+      $(world).unbind('stop');
+      $(world).unbind('run');
+      widget.pause();
+
       $('.tracks a').each(function(i, link) {
-        $(link).removeClass('active');
+        $(link).removeClass('active loading');
       });
 
-      if (isActive) {
-        $currentTarget.removeClass('active loading');
-        widget.pause();
-      } else {
+      if (!isActive) {
         $currentTrackLink = $currentTarget;
         $currentTarget.addClass('active loading');
         if (currentTrackId == id) {
-          playActiveTrack();
+          if (world.isStopped()) {
+            playActiveTrack();
+          } else {
+            $(world).one('stop', playActiveTrack);
+          }
         } else {
           currentTrackId = id;
-          loadTrackInPlayer(id, function() {
-            playActiveTrack();
-          });
+          // Loading a track is expensive.
+          // Need to wait for stars to fade before loading.
+          if (world.isStopped()) {
+            loadTrackInPlayer(id, playActiveTrack);
+          } else {
+            $(world).one('stop', function() {
+              loadTrackInPlayer(id, playActiveTrack);
+            });
+          }
         }
       }
 
       function playActiveTrack() {
-        $currentTarget.addClass('loading');
-        // Don't play if we paused while loading.
-        if ($currentTarget.hasClass('active')) {
-          // Play actually starts the loading...
-          widget.play();
-          widget.bind(SC.Widget.Events.PLAY_PROGRESS, function(e) {
-            // First LOAD_PROGRESS trigger signifies start of song
-            widget.unbind(SC.Widget.Events.PLAY_PROGRESS);
-            world.run();
-            $currentTarget.removeClass('loading');
-          });
-        } else {
+        // Play actually starts the loading...
+        widget.play();
+        widget.bind(SC.Widget.Events.PLAY_PROGRESS, function(e) {
+          // First PLAY_PROGRESS trigger signifies start of song
+          widget.unbind(SC.Widget.Events.PLAY_PROGRESS);
+          world.run();
           $currentTarget.removeClass('loading');
-        }
+        });
       }
     }
 
-    function onClickActiveTrack(e) {
+    // Hopefully pause/play listeners keep it clean on slow networks...
+    function onTrackPlay() {
+      if (widget.getPosition() > 0) {
+        world.run();
+      }
     }
 
-    widget.bind(SC.Widget.Events.FINISH, function(e) {
+    function onTrackPause() {
+      world.stop();
+    }
+
+    function onTrackFinish(e) {
       world.stop();
       $currentTrackLink.removeClass('active');
       var $nextTrackLi = $currentTrackLink.parent().next();
       if ($nextTrackLi.length) {
         $nextTrackLi.children('a').trigger('click');
       }
-    });
+    }
+
+    widget.bind(SC.Widget.Events.PLAY, onTrackPlay);
+    widget.bind(SC.Widget.Events.PAUSE, onTrackPause);
+    widget.bind(SC.Widget.Events.FINISH, onTrackFinish);
   });
 
   function loadTrackInPlayer(id, callback) {
@@ -341,29 +378,38 @@ function initTracks(world) {
   }
 }
 
-function centerContent() {
-  var minY = 16;
-  var $el = $('aside');
-  var elHeight = $el.outerHeight();
-  var windowHeight = $(document).height();
-  var pos = $el.offset();
-  var xOffset = pos.x;
-  var yOffset = windowHeight / 2 - elHeight / 2;
+function positionTracksEl() {
+  var $tracks = $('.tracks');
+  var $aside = $('aside.info');
+  var tracksHeight = $tracks.height();
+  var tracksWidth = $tracks.width();
+  var asideHeight = $aside.height();
+  var windowHeight = $(window).height();
+  var windowWidth = $(window).width();
+  var tracksPos = $tracks.offset();
+  var tracksYOffset = tracksPos.top;
+  var yOffset = windowHeight / 2 - tracksHeight / 2 - asideHeight;
+  var xOffset = windowWidth / 2 - tracksWidth / 2;
 
-  yOffset = yOffset > minY ? yOffset : minY;
-  $el.css({
-    'margin-top': yOffset + 'px'
+  $tracks.css({
+    'top': yOffset + 'px'
   });
+}
+
+function isBrowserCompatible() {
+  if (!Modernizr.canvas) {
+    $('.error').html('Sorry, you cannot view this page! Your browser does not support the required high tech shit! You need a better internet browser!')
+    .toggle();
+  } else {
+    return true;
+  }
 }
 
 /* RUN CODE */
 $(document).ready(function() {
-  try {
+  if (isBrowserCompatible()) {
     var world = createStarWorld();
-    console.log(world)
     initTracks(world);
-  } catch (e) {
-    console.log(e.message, e.trace);
   }
 });
 

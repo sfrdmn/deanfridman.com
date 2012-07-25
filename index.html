@@ -9,46 +9,54 @@
     <script type="text/javascript" src="static/external/js/jquery.js"></script>
     <script type="text/javascript" src="http://w.soundcloud.com/player/api.js"></script>
     <script type="text/javascript" src="static/external/js/paper.js"></script>
-
+    <!--<script type="text/javascript">Modernizr.canvas = false;</script>-->
     <script type="text/paperscript" src="static/js/space.js"
         canvas="space-canvas"></script>
+   <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-16879309-2']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ?
+          'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
   </head>
   <body>
     <canvas id="space-canvas" resize="true">
     </canvas>
     <div class="container">
-      <aside>
-        <div class="info">
-          <section class="description">
-            <p>Hi. My name is Dean.</p>
-            <p>I live on a hill.</p>
-            <p>I make music.</p>
-
-            <!-- nasty shits for display table stuff -->
-            <section class="contact">
-              <div>
+      <aside class="info">
+        <section class="description">
+          <p>My name is Dean.</p>
+          <p>I live on a hill.</p>
+          <p>I make music.</p>
+        </section>
+        <section class="contact">
+          <ul>
+            <li>
+              <a href="http://soundcloud.com/degobah">
+                <img src="/static/img/soundcloud.png">
+              </a>
+            </li>
+            <li>
+              <div id="email-btn" class="btn">
                 <div>
-                  <ul>
-                    <li>
-                      <a href="http://soundcloud.com/degobah">
-                        <img src="/static/img/soundcloud.png">
-                      </a>
-                    </li>
-                    <li id="email-btn" class="btn">
-                      <div>
-                        <div>@</div>
-                      </div>
-                    </li>
-                  </ul>
+                  <a href="mailto:deanfridman@gmail.com">@</a>
                 </div>
               </div>
-            </section>
-          </section>
-        </div>
-        <ul class="tracks">
-        </ul>
+            </li>
+          </ul>
+        </section>
         <iframe width="100%" height="1" scrolling="no" frameborder="no" src="http://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F48320799&show_artwork=true"></iframe>
       </aside>
+      <ul class="tracks">
+      </ul>
+      <div class="error">
+      </div>
     </div>
     <footer>
       <p>Music by <a href="#">Dean Fridman</a></p>
